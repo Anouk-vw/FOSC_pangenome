@@ -1,0 +1,69 @@
+'''
+snakefile to determine optimal parameter setting
+Run different combinations of parameters to determine best communitites
+'''
+
+param_P = [95, 99]
+param_S = [2500, 5000]
+param_L = [5000, 10000, 50000]
+param_H = 0.01
+
+infa = '/home/anouk/NOBINFBACKUP/graph_Fosc2.0/genomes/all_meta/all_genomes.fasta.gz'
+
+rule all:
+	input: 
+		expand('{p}-{s}-{l}-{h}/out.paf', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/out.paf.edges.list.txt', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/out.paf.edges.list.txt', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/out.paf.edges.weights.txt.communities.png', p = param_P, s= param_S, l = param_L, h = param_H),
+		#expand('{p}-{s}-{l}-{h}/out.paf_chr_table.txt', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/heatmap.pdf', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/heatmap.csv', p = param_P, s= param_S, l = param_L, h = param_H),
+
+rule wfmash:
+	input:
+		fasta = infa
+	output:
+		'{p}-{s}-{l}-{h}/out.paf'
+	shell:
+		'wfmash {input.fasta} -p {wildcards.p} -s {wildcards.s} -l {wildcards.l} -n 2 -X -t 10 -m -H {wildcards.h} > {output}'
+
+rule plot_com:
+	input:
+		'{p}-{s}-{l}-{h}/out.paf'
+	output:
+		files = '{p}-{s}-{l}-{h}/out.paf.edges.list.txt',
+		plot = '{p}-{s}-{l}-{h}/out.paf.edges.weights.txt.communities.png'
+	params:
+		direct = '{p}-{s}-{l}-{h}',
+	shell:
+		'''
+		python ~/anouk2/MPI/scripts/paf2net.py -p {input}
+		python ~/anouk2/MPI/scripts/net2communities.py -e {input}.edges.list.txt -w {input}.edges.weights.txt -n {input}.vertices.id2name.txt --plot
+		'''
+
+rule plot_heatmap:
+	input:
+		'{p}-{s}-{l}-{h}/out.paf'
+	output:
+		#files = '{p}-{s}-{l}-{h}/out.paf_chr_table.txt',
+		heatmap = '{p}-{s}-{l}-{h}/heatmap.pdf',
+		csv = '{p}-{s}-{l}-{h}/heatmap.csv'
+	params:
+		'{p}-{s}-{l}-{h}/heatmap'
+	shell:
+		'''
+		python3 get_table_about_communities.py {input}.edges.weights.txt.community.*.txt {params}
+		'''
+		#python3 plot_table.py {input}_chr_table.txt {output.files}
+		
+		
+		
+		
+		
+"""
+seq 0 14 | while read i
+    do chromosomes=$(cat ${out}.paf.edges.weights.txt.community.$i.txt | cut -f 3 -d '#' | sort | uniq | tr '\n' ' ');
+    echo "community $i --> $chromosomes"; done >> ${out}.coms.txt 
+
+"""
