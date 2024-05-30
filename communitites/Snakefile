@@ -1,12 +1,13 @@
+ruleorder: plot_com > plot_heatmap
 '''
 snakefile to determine optimal parameter setting
 Run different combinations of parameters to determine best communitites
 '''
 
-param_P = [95, 99]
-param_S = [2500, 5000]
-param_L = [5000, 10000, 50000]
-param_H = 0.01
+param_P = [90, 92, 95, 99]
+param_S = [2500, 5000, 10000, 20000]
+param_L = [5000, 10000, 50000,100000]
+param_H = [0.01,0.05]
 
 infa = '/home/anouk/NOBINFBACKUP/graph_Fosc2.0/genomes/all_meta/all_genomes.fasta.gz'
 
@@ -19,6 +20,8 @@ rule all:
 		#expand('{p}-{s}-{l}-{h}/out.paf_chr_table.txt', p = param_P, s= param_S, l = param_L, h = param_H),
 		expand('{p}-{s}-{l}-{h}/heatmap.pdf', p = param_P, s= param_S, l = param_L, h = param_H),
 		expand('{p}-{s}-{l}-{h}/heatmap.csv', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/community_counts.txt', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/community_count_dist.pdf', p = param_P, s= param_S, l = param_L, h = param_H),
 
 rule wfmash:
 	input:
@@ -57,9 +60,21 @@ rule plot_heatmap:
 		'''
 		#python3 plot_table.py {input}_chr_table.txt {output.files}
 		
-		
-		
-		
+rule community_counts:
+	input:
+		'{p}-{s}-{l}-{h}/out.paf'
+	output:
+		'{p}-{s}-{l}-{h}/community_counts.txt'
+	shell:
+		'wc -l {input}.edges.weights.txt.community.*.txt > {output}'
+
+rule plot_dist:
+	input:
+		'{p}-{s}-{l}-{h}/community_counts.txt'
+	output:
+		'{p}-{s}-{l}-{h}/community_count_dist.pdf'
+	shell:
+		'python3 plot_distribution.py {input} {output}'
 		
 """
 seq 0 14 | while read i
