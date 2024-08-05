@@ -566,20 +566,49 @@ def write_comm_files(adjustments):
             for line in comm_file:
                 member = line.strip()
                 if member in identifiers:
-                    index_element = identifiers.index(member)
-                    #append adjusted element to list
-                    members.append(adjusted[index_element])
+                    #continue because this member has to be split
+                    #split will be added later
+                    continue
+                     #index_element = identifiers.index(member)
+                     #append adjusted element to list
+                     #members.append(adjusted[index_element])
                 else:
                     members.append(member)
+        
+        members.extend(adjusted)
+        #print(members)
         
         with open(new_comm_file, 'w+') as ncf:
             for m in members:
                 ncf.write(m)
                 ncf.write('\n')
 
-    return
-    
+    return communities
 
+def fix_uniques(indir, parameters):
+    communities = [int(x.split('.')[6]) for x in os.listdir(f'{indir}/flagN/{parameters}/') if   x.startswith('out.paf.edges.weights.txt.community')]
+    
+    all_scaffolds = []
+    with open('communitites/all_scaffolds.txt') as infile:
+        for line in infile:
+            all_scaffolds.append(line.strip())
+
+    scaffolds_in_comm = []
+    with open(f'{indir}/flagN/{parameters}/gephi_nodes.csv') as infile:
+        for line in infile:
+            scaffolds_in_comm.append(line.strip().split(';')[1])
+
+    uniques = set(all_scaffolds) - set(scaffolds_in_comm)
+    print(len(uniques))
+    
+    current_comm = max(communities)
+    for u in uniques:
+        current_comm += 1
+        with open(f'extra_comms/{current_comm}_U.txt', 'w+') as outfile:
+            outfile.write(u)
+    return
+        
+    
 if __name__ == '__main__':
     indir = argv[1]
     parameters = argv[2]
@@ -594,11 +623,12 @@ if __name__ == '__main__':
     #        wrapper(indir, parameters, comm_dir, genome_dir, outdir, genome)
     
     #wrapper(indir, parameters, comm_dir, genome_dir, outdir, genome)
-    bl, adjust = splits_to_bed(f'{outdir}/scaff_split', genome_dir, f'{outdir}/paf_bed', indir, parameters)
-    print(adjust)
+    #bl, adjust = splits_to_bed(f'{outdir}/scaff_split', genome_dir, f'{outdir}/paf_bed', indir, parameters)
     
-    write_comm_files(adjust)
-    
+    #write_comm_files(adjust)
+    #with open('to_split.bed', 'w+') as tosplit:
+    #    for x in bl:
+    #        tosplit.write(f'{x[0]}\t{x[1]}\t{x[2]}\t{x[3]}\n')
 
-
+    fix_uniques(argv[1], argv[2])
     
