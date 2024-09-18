@@ -3,14 +3,15 @@ ruleorder: plot_com > plot_heatmap > community_counts
 snakefile to determine optimal parameter setting
 Run different combinations of parameters to determine best communitites
 '''
+configfile: './config.yaml'
 
-param_P = [95,99] #[92, 95] #
-param_S = [2500, 5000, 10000] #, 10000, 20000] #[2500] #
-param_L = [5000,10000, 25000, 50000,100000] #[50000, 100000] #
-param_H = [0.01] #[0.01,0.05]
+param_P = config['P']
+param_S = config['S']
+param_L = config['L']
+param_H = config['H']
 #additional = ['']
 
-infa = '/home/anouk/NOBINFBACKUP/graph_Fosc2.0/genomes/new_set/all_genomes.fasta.gz'
+infa = config['genome_dir']
 
 rule all:
 	input: 
@@ -88,7 +89,7 @@ rule get_gephi:
 	params:
 		'{p}-{s}-{l}-{h}'
 	shell:
-		'python /home/anouk/anouk2/graph_Fosc2.0/scripts/analyse_communities.py {params}'
+		'python ../scripts/analyse_communities.py {params}'
 
 """
 seq 0 14 | while read i
