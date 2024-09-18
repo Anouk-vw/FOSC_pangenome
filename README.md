@@ -3,6 +3,13 @@
 Repository for building and analysing a pangenome of species containing
 accessory genomic regions.
 
+## install
+1. clone repository
+
+2. create environment
+conda env create -f environment.yml
+conda activate mpi
+
 ## steps
 1. collect and clean genomes
 headers as ">genome#chromosome"
