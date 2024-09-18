@@ -207,6 +207,7 @@ def plot_perc_windows(all_p_comm_dict):
         ax[i].set_title(f'{genome}#scaffold{i}')
         i += 1
     plt.savefig(f'{genome}_perc_chrom.pdf')
+    plt.close()
 
 def collect_stats(comm_dict, majority):
     """
@@ -322,7 +323,14 @@ def get_first_last(perc_comm_dict):
 
 def wrapper(indir, parameters, comm_dir, genome_dir, outdir, genome):
     #read communities in directory
-    community_dict = a_comm.get_comm_dict(f'{indir}/flagN/{parameters}')
+    if treat_flagN:
+        indir_comms = f'{indir}/flagN/{parameters}/'
+    else:
+        indir_comms = f'{indir}/{parameters}/'
+    
+    #this can be confusing. Comm_dir by definition needs to be the unsplit
+    #mappings, since its important 
+    community_dict = a_comm.get_comm_dict(f'{indir_comms}')
     community_dict_split = a_comm.get_comm_dict(comm_dir)
     window_size = 100000
     
@@ -488,10 +496,14 @@ def splits_to_bed(splits_dir, genome_dir, paf_dir, indir, parameters):
     """
     ../genomes/new_set/clean_data
     """
+    if treat_flagN:
+        indir_comms = f'{indir}/flagN/{parameters}/'
+    else:
+        indir_comms = f'{indir}/{parameters}/'
     possible_splits = filter_putative_splits(splits_dir)
     bed_lines = []
     adjustments = {}
-    scaff_comm_dict = a_comm.get_comm_dict(f'{indir}/flagN/{parameters}')
+    scaff_comm_dict = a_comm.get_comm_dict(f'{indir_comms}')
     
     for p_split in possible_splits:
         isstart = False
@@ -500,7 +512,7 @@ def splits_to_bed(splits_dir, genome_dir, paf_dir, indir, parameters):
         sfile, chrom, start, stop, new_comm = p_split
 
         chrom_print = f"{sfile.replace('.txt', '#')}{chrom}"
-        paf_file = f"{paf_dir}/{sfile.replace('.txt','')}_paf.bed_sorted"
+        paf_file = f"{paf_dir}/{sfile.replace('.txt','')}_paf.bed"
         stops = open_windows(f"{genome_dir}/{sfile.strip('.txt')}.clean.fa.fai")
         
         current_comm = scaff_comm_dict[chrom_print]
@@ -548,8 +560,13 @@ def splits_to_bed(splits_dir, genome_dir, paf_dir, indir, parameters):
         
     return bed_lines, adjustments
 
-def write_comm_files(adjustments):
-    communities = [x.split('.')[6] for x in os.listdir(f'{indir}/flagN/{parameters}/') if x.startswith('out.paf.edges.weights.txt.community')]
+def write_comm_files(adjustments, outdir):
+    if treat_flagN:
+        indir_comms = f'{indir}/flagN/{parameters}/'
+    else:
+        indir_comms = f'{indir}/{parameters}/'
+        
+    communities = [x.split('.')[6] for x in os.listdir(f'{indir_comms}/') if x.startswith('out.paf.edges.weights.txt.community')]
     
     for community in communities:
         try:
@@ -559,10 +576,10 @@ def write_comm_files(adjustments):
         #for community, adjusted in adjustments.items():
         identifiers = [a.split('_p')[0] for a in adjusted]
         
-        new_comm_file = f'updated_comms/{community}.txt'
+        new_comm_file = f'{outdir}/updated_comms/{community}.txt'
         
         members = []
-        with open(f'{indir}/flagN/{parameters}/out.paf.edges.weights.txt.community.{community}.txt') as comm_file:
+        with open(f'{indir_comms}/out.paf.edges.weights.txt.community.{community}.txt') as comm_file:
             for line in comm_file:
                 member = line.strip()
                 if member in identifiers:
@@ -585,16 +602,21 @@ def write_comm_files(adjustments):
 
     return communities
 
-def fix_uniques(indir, parameters):
-    communities = [int(x.split('.')[6]) for x in os.listdir(f'{indir}/flagN/{parameters}/') if   x.startswith('out.paf.edges.weights.txt.community')]
+def fix_uniques(indir, parameters, outdir):
+    if treat_flagN:
+        indir_comms = f'{indir}/flagN/{parameters}/'
+    else:
+        indir_comms = f'{indir}/{parameters}/'
+    
+    communities = [int(x.split('.')[6]) for x in os.listdir(indir_comms) if   x.startswith('out.paf.edges.weights.txt.community')]
     
     all_scaffolds = []
-    with open('communitites/all_scaffolds.txt') as infile:
+    with open('../communitites/all_scaffolds.txt') as infile:
         for line in infile:
             all_scaffolds.append(line.strip())
 
     scaffolds_in_comm = []
-    with open(f'{indir}/flagN/{parameters}/gephi_nodes.csv') as infile:
+    with open(f'{indir_comms}/gephi_nodes.csv') as infile:
         for line in infile:
             scaffolds_in_comm.append(line.strip().split(';')[1])
 
@@ -604,7 +626,7 @@ def fix_uniques(indir, parameters):
     current_comm = max(communities)
     for u in uniques:
         current_comm += 1
-        with open(f'extra_comms/{current_comm}_U.txt', 'w+') as outfile:
+        with open(f'{outdir}/extra_comms/{current_comm}_U.txt', 'w+') as outfile:
             outfile.write(u)
     return
         
@@ -615,20 +637,23 @@ if __name__ == '__main__':
     comm_dir = f'{indir}/{parameters}'
     genome_dir = argv[3]
     genome = argv[4]
-    outdir = 'chrom_overview_2'
+    treat_flagN = False
+    outdir = 'chrom_overview_splitcomms_Fig1'
     
-    #for genome in os.listdir(genome_dir):
-    #    if genome.endswith('.fa'):
-    #        genome = genome.replace('.clean.fa', '')
-    #        wrapper(indir, parameters, comm_dir, genome_dir, outdir, genome)
+    for genome in os.listdir(genome_dir):
+        if genome.endswith('.fa'):
+            genome = genome.replace('.clean.fa', '')
+            wrapper(indir, parameters, comm_dir, genome_dir, outdir, genome)
+            bl, adjust = splits_to_bed(f'{outdir}/scaff_split', genome_dir, f'{outdir}/paf_bed', indir, parameters)
+    
     
     #wrapper(indir, parameters, comm_dir, genome_dir, outdir, genome)
     #bl, adjust = splits_to_bed(f'{outdir}/scaff_split', genome_dir, f'{outdir}/paf_bed', indir, parameters)
     
-    #write_comm_files(adjust)
-    #with open('to_split.bed', 'w+') as tosplit:
-    #    for x in bl:
-    #        tosplit.write(f'{x[0]}\t{x[1]}\t{x[2]}\t{x[3]}\n')
+            write_comm_files(adjust, outdir)
+            with open('to_split.bed', 'w+') as tosplit:
+                for x in bl:
+                    tosplit.write(f'{x[0]}\t{x[1]}\t{x[2]}\t{x[3]}\n')
 
-    fix_uniques(argv[1], argv[2])
+    fix_uniques(argv[1], argv[2], outdir)
     

@@ -1,3 +1,18 @@
+"""
+Script to match query-target names from paf to community
+This can be used to colour chromosome locations based on community
+1. For direct plotting in pafR (colors will overlap)
+2. For splitting chromosomes, using bedtools intersect -> percentage of
+comm per window
+
+#incase chromosomes should be coloured according to flagN communities, indir_comm == flagN indir
+
+Its not a good idea to use flagN as indir to determine coordinates in paf. Because -N makes that
+the full chromosome maps, also when only a part should be mapped. Increasing the match size
+
+
+"""
+
 from sys import argv
 import os
 
@@ -14,17 +29,17 @@ def read_paf(in_paf, scaff_comm_dict):
                 community = int(scaff_comm_dict[ref])
                 qcomm = int(scaff_comm_dict[query])
             except KeyError:
-                community = 'unplaced'
-                qcomm = 'unplaced'
+                community = -1
+                qcomm = -1
             lines.append([query, qlen, qstart, qstop, qstrand, ref, rlen, rstart, rstop, rstraind, matches, blocklen, identity, int(community), int(qcomm)])
     return lines
 
-def write_out(indir, cdict):
+def write_out(indir, cdict, oudir):
     """
     write output with comm identities
     """
     paf_lines = read_paf(f'{indir}/out.paf',cdict)
-    with open(f'{indir}/plot_qascomm.paf', 'w+') as outfile:
+    with open(f'{outdir}/plot_qascomm.paf', 'w+') as outfile:
         for line in paf_lines:
             line[0] = f'comm-{line[-1]}'
             line = line[0:-2]
@@ -32,7 +47,7 @@ def write_out(indir, cdict):
             outfile.write('\n')
             
     paf_lines = read_paf(f'{indir}/out.paf', cdict)
-    with open(f'{indir}/plot_tascomm.paf', 'w+') as outfile:
+    with open(f'{outdir}/plot_tascomm.paf', 'w+') as outfile:
         for line in paf_lines:
             line[5] = f'comm-{line[-2]}'
             line = line[0:-2]
@@ -57,5 +72,9 @@ def get_comm_dict(indict):
 
 if __name__ == '__main__':
     indir = argv[1]
-    cdict = get_comm_dict(indir)
-    write_out(indir, cdict)
+    indir_comm = argv[2]
+    outdir = argv[3]
+    #incase chromosomes should be coloured according to flagN communities
+    #but based on full-mappings, indir comm is the flagN comm. ekse indir_comm == indir.
+    cdict = get_comm_dict(indir_comm)
+    write_out(indir, cdict, outdir)
