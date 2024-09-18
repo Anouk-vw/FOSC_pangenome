@@ -1,15 +1,16 @@
-ruleorder: plot_com > plot_heatmap
+ruleorder: plot_com > plot_heatmap > community_counts
 '''
 snakefile to determine optimal parameter setting
 Run different combinations of parameters to determine best communitites
 '''
 
-param_P = [90, 92, 95, 99]
-param_S = [2500, 5000, 10000, 20000]
-param_L = [5000, 10000, 50000,100000]
-param_H = [0.01,0.05]
+param_P = [95,99] #[92, 95] #
+param_S = [2500, 5000, 10000] #, 10000, 20000] #[2500] #
+param_L = [5000,10000, 25000, 50000,100000] #[50000, 100000] #
+param_H = [0.01] #[0.01,0.05]
+#additional = ['']
 
-infa = '/home/anouk/NOBINFBACKUP/graph_Fosc2.0/genomes/all_meta/all_genomes.fasta.gz'
+infa = '/home/anouk/NOBINFBACKUP/graph_Fosc2.0/genomes/new_set/all_genomes.fasta.gz'
 
 rule all:
 	input: 
@@ -17,11 +18,12 @@ rule all:
 		expand('{p}-{s}-{l}-{h}/out.paf.edges.list.txt', p = param_P, s= param_S, l = param_L, h = param_H),
 		expand('{p}-{s}-{l}-{h}/out.paf.edges.list.txt', p = param_P, s= param_S, l = param_L, h = param_H),
 		expand('{p}-{s}-{l}-{h}/out.paf.edges.weights.txt.communities.png', p = param_P, s= param_S, l = param_L, h = param_H),
-		#expand('{p}-{s}-{l}-{h}/out.paf_chr_table.txt', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/community_counts.txt', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/community_count_dist.png', p = param_P, s= param_S, l = param_L, h = param_H),
 		expand('{p}-{s}-{l}-{h}/heatmap.pdf', p = param_P, s= param_S, l = param_L, h = param_H),
 		expand('{p}-{s}-{l}-{h}/heatmap.csv', p = param_P, s= param_S, l = param_L, h = param_H),
-		expand('{p}-{s}-{l}-{h}/community_counts.txt', p = param_P, s= param_S, l = param_L, h = param_H),
-		expand('{p}-{s}-{l}-{h}/community_count_dist.pdf', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/gephi_nodes.csv', p = param_P, s= param_S, l = param_L, h = param_H),
+		expand('{p}-{s}-{l}-{h}/plot_tascomm.paf', p = param_P, s= param_S, l = param_L, h = param_H),
 
 rule wfmash:
 	input:
@@ -29,7 +31,8 @@ rule wfmash:
 	output:
 		'{p}-{s}-{l}-{h}/out.paf'
 	shell:
-		'wfmash {input.fasta} -p {wildcards.p} -s {wildcards.s} -l {wildcards.l} -n 2 -X -t 10 -m -H {wildcards.h} > {output}'
+		#why is n set to 2??
+		'wfmash {input.fasta} -p {wildcards.p} -s {wildcards.s} -l {wildcards.l} -n 74 -X -t 10 -m -H {wildcards.h} > {output}'
 
 rule plot_com:
 	input:
@@ -72,10 +75,21 @@ rule plot_dist:
 	input:
 		'{p}-{s}-{l}-{h}/community_counts.txt'
 	output:
-		'{p}-{s}-{l}-{h}/community_count_dist.pdf'
+		'{p}-{s}-{l}-{h}/community_count_dist.png'
 	shell:
 		'python3 plot_distribution.py {input} {output}'
 		
+rule get_gephi:
+	input:
+		'{p}-{s}-{l}-{h}/community_counts.txt'
+	output:
+		gephi = '{p}-{s}-{l}-{h}/gephi_nodes.csv',
+		pafs= '{p}-{s}-{l}-{h}/plot_tascomm.paf'
+	params:
+		'{p}-{s}-{l}-{h}'
+	shell:
+		'python /home/anouk/anouk2/graph_Fosc2.0/scripts/analyse_communities.py {params}'
+
 """
 seq 0 14 | while read i
     do chromosomes=$(cat ${out}.paf.edges.weights.txt.community.$i.txt | cut -f 3 -d '#' | sort | uniq | tr '\n' ' ');
