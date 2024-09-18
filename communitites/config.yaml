@@ -1,0 +1,8 @@
+#location of the fasta file 
+genome_dir: '/home/anouk/NOBINFBACKUP/graph_Fosc2.0/genomes/new_set/all_genomes.fasta.gz'
+
+#settings to run:
+P: [95,99]
+S: [2500, 5000, 10000]
+L: [5000,10000, 25000, 50000,100000]
+H: [0.01]
