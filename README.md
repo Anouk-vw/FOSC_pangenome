@@ -5,6 +5,11 @@ accessory genomic regions.
 
 ## steps
 1. collect and clean genomes
+headers as ">genome#chromosome"
+2. Concatenate all genomes into one file
+3. Add location of all genomes fasta in communities/config.yaml
+3. Run snakefile in communities directory
+
 #### genomes/
 - genomes/all_meta/clean_data
 contain all cleaned genomes
