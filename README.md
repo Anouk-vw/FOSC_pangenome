@@ -29,3 +29,6 @@ Specifically adjusted for FOSC genomes from NCBI adding the formae specialis to 
 - communitites/Snakefile
 Pipeline to try different combinations of parameters.
 Creates an output directory per combination.
+
+Pipeline uses scripts from
+- Guarracino et al. (2023) https://www.nature.com/articles/s41586-023-05976-y
