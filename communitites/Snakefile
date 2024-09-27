@@ -46,8 +46,8 @@ rule plot_com:
 		direct = '{p}-{s}-{l}-{h}',
 	shell:
 		'''
-		python ~/anouk2/MPI/scripts/paf2net.py -p {input}
-		python ~/anouk2/MPI/scripts/net2communities.py -e {input}.edges.list.txt -w {input}.edges.weights.txt -n {input}.vertices.id2name.txt --plot
+		python ../scripts/paf2net.py -p {input}
+		python ../scripts/net2communities.py -e {input}.edges.list.txt -w {input}.edges.weights.txt -n {input}.vertices.id2name.txt --plot
 		'''
 
 rule plot_heatmap:
